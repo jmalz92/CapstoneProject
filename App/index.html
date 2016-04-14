@@ -10,6 +10,8 @@
 <script src="js/bootstrap.js"></script>
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
 <script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/data.js"></script>
+<script src="https://code.highcharts.com/modules/drilldown.js"></script>
 <link href="css/bootstrap.css" rel="stylesheet">
 <link href="css/site.css" rel="stylesheet">
 <link href="css/font-awesome-4.5.0/css/font-awesome.css" rel="stylesheet">
@@ -59,7 +61,7 @@
       </div>
       <div class="modal-body">
         <p>Select a file</p>
-		<input type="file" id="fileSelector" custom-on-change="selectFile"/>
+		<input type="file" id="fileSelector" custom-on-change="selectFile" multiple/>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

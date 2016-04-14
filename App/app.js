@@ -14,7 +14,7 @@ myApp.run(function ($rootScope) {
     $rootScope.currentSwitchData = null;
 
 })
-//Gabie test comment
+
 myApp.config(['$routeProvider',
     function ($routeProvider) {
         $routeProvider
@@ -112,7 +112,7 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
             var inputPacketTotal = 0;
             var outputPacketTotal = 0;
             var forwardPacketTotal = 0;
-
+		
             for (var j = 0; j < dataItems.length - 1; j++) {
                 if (dataItems[j].Chain == "INPUT") {
                     inputByteTotal += parseInt(dataItems[j].Bytes);
@@ -287,6 +287,49 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
         var receivedPacketSeries = [];
 		var transmittedPacketSeries = [];
 		
+		var errorDrilldown = [];
+		var errorSeries = [
+		{
+			name: 'Rx Errors',
+            data: []
+		},
+		{
+			name: 'Rx Dropped',
+            data: []
+		},
+		{
+			name: 'Rx Overruns',
+            data: []
+		},
+		{
+			name: 'Rx Frame',
+            data: [] 
+		},
+		{
+			name: 'Tx Errors',
+            data: []
+		},
+		{
+			name: 'Tx Dropped',
+            data: []
+		},
+		{
+			name: 'Tx Overruns',
+            data: []
+		},
+		{
+			name: 'TxCarrier',
+            data: []
+		},
+		{
+			name: 'TxCollisions',
+            data: []
+		}
+		];
+		
+		
+		
+					
         //get series categories from registration message
         var registrationDetails = $rootScope.currentEthernetData.Messages[0].DataItems;
         for (var i = 0; i < registrationDetails.length; i++) {
@@ -300,6 +343,19 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
                 data: []
             });
 			
+			for(var j = 0; j < errorSeries.length; j++)
+			{
+				var drillId = registrationDetails[i].InterfaceName + '-' + j;
+				errorSeries[j].data.push({name: registrationDetails[i].InterfaceName, y: 0, drilldown: drillId})
+				errorDrilldown.push({
+					type: 'pie',
+					id: drillId,
+					data: [
+						{name: 'Test A', y: 2}, //return to fix later
+						{name: 'Test B', y: 3},
+					]
+				})
+			}
         }
 
         //move this logic into core library?
@@ -309,8 +365,29 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
             for (var j = 0; j < dataItems.length; j++) {
                 receivedPacketSeries[j].data.push(parseInt(dataItems[j].RxGood));
 				transmittedPacketSeries[j].data.push(parseInt(dataItems[j].TxGood));
+				
+				errorSeries[0].data[j].y = parseInt(dataItems[j].RxErrors); //probably a better way to handle this
+				errorSeries[1].data[j].y = parseInt(dataItems[j].RxDropped);
+				errorSeries[2].data[j].y = parseInt(dataItems[j].RxOverruns);
+				errorSeries[3].data[j].y = parseInt(dataItems[j].RxFrame);
+				errorSeries[4].data[j].y = parseInt(dataItems[j].TxErrors);
+				errorSeries[5].data[j].y = parseInt(dataItems[j].TxDropped);
+				errorSeries[6].data[j].y = parseInt(dataItems[j].TxOverruns);
+				errorSeries[7].data[j].y = parseInt(dataItems[j].TxCarrier);
+				errorSeries[8].data[j].y = parseInt(dataItems[j].TxCollisions);
+				
+				/* errorSeries[0].data[j].y = 2; //test data
+				errorSeries[1].data[j].y = 4;
+				errorSeries[2].data[j].y = 6;
+				errorSeries[3].data[j].y = 8;
+				errorSeries[4].data[j].y = 10;
+				errorSeries[5].data[j].y = 12;
+				errorSeries[6].data[j].y = 14;
+				errorSeries[7].data[j].y = 16;
+				errorSeries[8].data[j].y = 18; */
             }
             
+			
         }
 
         //does not separate presentation code from logic and data. need to write a directive for this
@@ -344,6 +421,8 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
 			    }
 			},
 		    yAxis: {
+				min: 0,
+				minRange : 0.1,
 		        title:
 				{
 				    text: 'Received Packets'
@@ -354,11 +433,7 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
 		            color: 'silver'
 		        }]
 		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
-		    },
+		    
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
 		    },
@@ -406,18 +481,50 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
 		            color: 'silver'
 		        }]
 		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
-		    },
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
 		    },
 		    series: transmittedPacketSeries
 		};
-
 		
+		
+		var errorChart = {
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Errors'
+        },
+		xAxis: {
+            type: 'category'
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Total Errors'
+            }
+        },
+        tooltip: {
+            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                '<td style="padding:0"><b>{point.y}</b></td></tr>',
+            footerFormat: '</table>',
+            shared: true,
+            useHTML: true
+        },
+        plotOptions: {
+            column: {
+                pointPadding: 0.2,
+                borderWidth: 0
+            }
+        },
+        series: errorSeries,
+        drilldown: {
+            series: errorDrilldown
+        }
+    };
+		
+		Highcharts.chart('errorChart', errorChart);
         Highcharts.chart('receivedPacketsChart', receivedPacketsChart);
 		Highcharts.chart('transmittedPacketsChart', transmittedPacketsChart);
     }
@@ -683,11 +790,6 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		            color: 'silver'
 		        }]
 		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
-		    },
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
 		    },
@@ -698,6 +800,10 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		//Multicast Chart
 		var multicastChart =
 		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
 		    title:
 			{
 			    text: 'Multicast',
@@ -724,18 +830,13 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    yAxis: {
 		        title:
 				{
-				    text: 'Multicast'
+				    text: 'Packets'
 				},
 		        plotLines: [{
 		            value: 0,
 		            width: 2,
 		            color: 'silver'
 		        }]
-		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
 		    },
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
@@ -747,6 +848,10 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		//Broadcast Chart
 		var broadcastChart =
 		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
 		    title:
 			{
 			    text: 'Broadcast',
@@ -773,18 +878,13 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    yAxis: {
 		        title:
 				{
-				    text: 'Broadcast'
+				    text: 'Packets'
 				},
 		        plotLines: [{
 		            value: 0,
 		            width: 2,
 		            color: 'silver'
 		        }]
-		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
 		    },
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
@@ -796,6 +896,10 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		//Unicast Chart
 		var unicastChart =
 		{
+		    chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
 		    title:
 			{
 			    text: 'Unicast',
@@ -822,18 +926,13 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    yAxis: {
 		        title:
 				{
-				    text: 'Unicast'
+				    text: 'Packets'
 				},
 		        plotLines: [{
 		            value: 0,
 		            width: 2,
 		            color: 'silver'
 		        }]
-		    },
-		    plotOptions: {
-		        series: {
-		            compare: 'value'
-		        }
 		    },
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
