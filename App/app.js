@@ -455,6 +455,14 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		var egressExcessiveData = [];
 		var egressCollisionsData = [];
 		var egressOtherData = [];
+		
+		//Nicole broadcast
+		var ingressBroadcastData = [];
+		var egressBroadcastData = [];
+		
+		//Nicole unicast
+		var ingressUnicastData = [];
+		var egressUnicastData = [];
 
         //move this logic into core library?
         for (var i = 1; i < messageCount - 1; i++) {
@@ -480,6 +488,13 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			var egressCollisionsTotal = 0;
 			var egressOtherTotal = 0;
 */
+			
+			//Nicole broadcast
+			var ingressBroadcastTotal = 0;
+			var egressBroadcastTotal = 0;
+			//Nicole unicast
+			var ingressUnicastTotal = 0;
+			var egressUnicastTotal = 0;
 
             for (var j = 0; j < dataItems.length - 1; j++) {
                 ingressByteTotal += parseInt(dataItems[j].IngressBytes);
@@ -522,6 +537,12 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 				if(parseInt(dataItems[j].EgressOther) > 0){
 					egressOtherTotal += 1;
 				}*/
+				//Nicole broadcast
+				ingressBroadcastTotal += parseInt(dataItems[j].IngressBroadcast);
+				egressBroadcastTotal += parseInt(dataItems[j].EgressBroadcast);
+				//Nicole unicast
+				ingressUnicastTotal += parseInt(dataItems[j].IngressUnicast);
+				egressUnicastTotal += parseInt(dataItems[j].EgressUnicast);
             }
             ingressByteData.push(ingressByteTotal);
             egressByteData.push(egressByteTotal);
@@ -544,7 +565,12 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			egressCollisionsData.push(egressCollisionsTotal);
 			egressOtherData.push(egressOtherTotal);
 		*/
-
+			//Nicole broadcast
+			ingressBroadcastData.push(ingressBroadcastTotal);
+			egressBroadcastData.push(egressBroadcastTotal);
+			//Nicole unicast
+			ingressUnicastData.push(ingressUnicastTotal);
+			egressUnicastData.push(egressUnicastTotal);
         }
 
         //fill series data;
@@ -600,7 +626,22 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			data: egressOtherData
 		}];
 */
-
+		//Nicole broadcast series
+		var broadcastSeries = [{
+			name: 'Ingress',
+			data: ingressBroadcastData
+		},{
+			name: 'Egress',
+			data: egressBroadcastData
+		}];
+		//Nicole unicast series
+		var unicastSeries = [{
+			name: 'Ingress',
+			data: ingressUnicastData
+		}, {
+			name: 'Egress',
+			data: egressUnicastData
+		}];
         //does not separate presentation code from logic and data. need to write a directive for this
         var bytesChart =
 		{
@@ -702,6 +743,104 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    series: multicastSeries
 		};
 		
+		//Nicole
+		//Broadcast Chart
+		var broadcastChart =
+		{
+		    title:
+			{
+			    text: 'Broadcast',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Broadcast'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: broadcastSeries
+		};
+		
+		//Nicole
+		//Unicast Chart
+		var unicastChart =
+		{
+		    title:
+			{
+			    text: 'Unicast',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Unicast'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: unicastSeries
+		};
+		
 		//Errors Chart
 	/*	var errorsChart =
 		{
@@ -743,6 +882,8 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		Highcharts.chart('bytesChart', bytesChart);
 		Highcharts.chart('multicastChart', multicastChart);
 		//Highcharts.chart('errorsChart', errorsChart);
+		Highcharts.chart('broadcastChart', broadcastChart);
+		Highcharts.chart('unicastChart', unicastChart);
     }
 
 
@@ -764,30 +905,4 @@ myApp.directive('customOnChange', function () {
         }
     };
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
