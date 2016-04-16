@@ -1,8 +1,9 @@
-<div ng-show="currentEthernetData == null" class="jumbotron" style="margin: 0 auto">
+<div ng-show="currentEthernetData.length == 0" class="jumbotron" style="margin: 0 auto">
   <h1>Ethernet Stat</h1>
   <p>No Ethernet stat data found, upload a valid json file</p>
 </div>
 
-<div id="receivedPacketsChart"></div>
-<div id="transmittedPacketsChart"></div>
-<div id="errorChart"></div>
+
+<div ng-repeat="chart in charts" class="row">
+	<highchart config="chart" class="span10"></highchart>            
+</div>

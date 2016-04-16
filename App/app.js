@@ -1,7 +1,7 @@
 'use strict'
 
 //Define an angular module for our app
-var myApp = angular.module('myApp', ['ngRoute']);
+var myApp = angular.module('myApp', ['ngRoute', 'highcharts-ng']);
 //Define Routing for the application
 
 //TODOS: Create a directive for chart building
@@ -9,9 +9,9 @@ var myApp = angular.module('myApp', ['ngRoute']);
 
 
 myApp.run(function ($rootScope) {
-    $rootScope.currentIPData = null;
-    $rootScope.currentEthernetData = null;
-    $rootScope.currentSwitchData = null;
+    $rootScope.currentIPData = [];
+    $rootScope.currentEthernetData = [];
+    $rootScope.currentSwitchData = [];
 
 })
 
@@ -44,53 +44,71 @@ myApp.config(['$routeProvider',
 //change http to file upload control
 myApp.controller('homeController', ['$scope', '$http', '$routeParams', '$location', '$rootScope', function ($scope, $http, $routeParams, $location, $rootScope) {
 
-    $scope.fileToUpload = null;
+    $scope.filesToUpload = [];
 
     $scope.selectFile = function () {
-        var file = event.target.files[0];
-        var fr = new FileReader(); //will not work on old version of IE, need to fix this later
-        fr.onload = $scope.receivedText;
-        fr.readAsText(file);
+        var files = event.target.files;
+        
+		for(var i = 0; i < files.length; i++){
+			var fr = new FileReader(); 
+			fr.onload = $scope.receivedText;
+			fr.readAsText(files[i]);
+		}
+        
     };
 
     $scope.receivedText = function (e) {
         var lines = e.target.result;
-        $scope.fileToUpload = JSON.parse(lines);
+        $scope.filesToUpload.push(JSON.parse(lines));
     }
 
     $scope.upload = function () {
-        var data = $scope.fileToUpload;
-        if (data) {
-            if (data.LogType == "IPTable") {
-                $rootScope.currentIPData = data;
-                $location.path('/iptable');
-            }
-            else if (data.LogType == "Switch") {
-                $rootScope.currentSwitchData = data;
-                $location.path('/switch');
-            }
-            else if (data.LogType == "Ethernet") {
-                $rootScope.currentEthernetData = data;
-                $location.path('/ethernet');
-            }
+        var data = $scope.filesToUpload;
+		var path = null;
+		
+		for(var i = 0; i < data.length; i++){
+			if (data[i]) {
+				if (data[i].LogType == "IPTable") {
+					$rootScope.currentIPData.push( data[i]);
+					path = '/iptable';
+				}
+				else if (data[i].LogType == "Switch") {
+					$rootScope.currentSwitchData.push( data[i]);
+					path = '/switch';
+				}
+				else if (data[i].LogType == "Ethernet") {
+					$rootScope.currentEthernetData.push( data[i]);
+					path = '/ethernet';
+				}
 
-            else {
-                alert("File is not a valid log file");
-            }
-        }
-        else {
-            alert("Error uploading data, make sure a valid file was selected before uploading");
-        }
-
+				else {
+					alert("File is not a valid log file");
+					return;
+				}
+			}
+			else {
+				alert("Error uploading data, make sure a valid file was selected before uploading");
+				return;
+			}
+		}
+		
+		if(path){
+			$location.path(path);
+		}
+        
     };
 }]);
 
 myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $rootScope) {
-
-
+	
+	$scope.charts = [];
+	
     $scope.loadCharts = function () {
-        //build default chartData
-        var messageCount = $rootScope.currentIPData.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+		
+		for(var i = 0; i < $rootScope.currentIPData.length; i++)
+		{
+			 //build default chartData
+        var messageCount = $rootScope.currentIPData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
         //building series data will go here
         var inputByteData = [];
@@ -102,8 +120,8 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
         var forwardPacketData = [];
 
         //move this logic into core library?
-        for (var i = 1; i < messageCount - 1; i++) {
-            var dataItems = $rootScope.currentIPData.Messages[i].DataItems;
+        for (var j = 1; j < messageCount - 1; j++) {
+            var dataItems = $rootScope.currentIPData[i].Messages[j].DataItems;
 
             var inputByteTotal = 0;
             var outputByteTotal = 0;
@@ -113,19 +131,19 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
             var outputPacketTotal = 0;
             var forwardPacketTotal = 0;
 		
-            for (var j = 0; j < dataItems.length - 1; j++) {
-                if (dataItems[j].Chain == "INPUT") {
-                    inputByteTotal += parseInt(dataItems[j].Bytes);
-                    inputPacketTotal += parseInt(dataItems[j].Packets);
+            for (var k = 0; k < dataItems.length - 1; k++) {
+                if (dataItems[k].Chain == "INPUT") {
+                    inputByteTotal += parseInt(dataItems[k].Bytes);
+                    inputPacketTotal += parseInt(dataItems[k].Packets);
                 }
-                if (dataItems[j].Chain == "OUTPUT") {
-                    outputByteTotal += parseInt(dataItems[j].Bytes);
-                    outputPacketTotal += parseInt(dataItems[j].Packets);
+                if (dataItems[k].Chain == "OUTPUT") {
+                    outputByteTotal += parseInt(dataItems[k].Bytes);
+                    outputPacketTotal += parseInt(dataItems[k].Packets);
 
                 }
-                if (dataItems[j].Chain == "FORWARD") {
-                    forwardByteTotal += parseInt(dataItems[j].Bytes);
-                    forwardPacketTotal += parseInt(dataItems[j].Packets);
+                if (dataItems[k].Chain == "FORWARD") {
+                    forwardByteTotal += parseInt(dataItems[k].Bytes);
+                    forwardPacketTotal += parseInt(dataItems[k].Packets);
                 }
             }
             inputByteData.push(inputByteTotal);
@@ -263,13 +281,16 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
 		    series: packetSeries
 		};
 
-
-        Highcharts.chart('bytesChart', bytesChart);
-        Highcharts.chart('packetsChart', packetsChart);
+		$scope.charts.push(bytesChart);
+		$scope.charts.push(packetsChart);
+		
+		}
+		
+		
     }
 
-
-    if ($rootScope.currentIPData) {
+    if (typeof $rootScope.currentIPData !== 'undefined' && $rootScope.currentIPData.length > 0) 
+	{
         $scope.loadCharts();
     }
 
@@ -279,9 +300,13 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
 
 myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope, $rootScope) {
 	
+	$scope.charts = [];
 	
     $scope.loadCharts = function () {
-        var messageCount = $rootScope.currentEthernetData.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+		
+		for(var i = 0; i < $rootScope.currentEthernetData.length; i++)
+		{
+			var messageCount = $rootScope.currentEthernetData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
         //fill series data;
         var receivedPacketSeries = [];
@@ -331,50 +356,50 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
 		
 					
         //get series categories from registration message
-        var registrationDetails = $rootScope.currentEthernetData.Messages[0].DataItems;
-        for (var i = 0; i < registrationDetails.length; i++) {
+        var registrationDetails = $rootScope.currentEthernetData[i].Messages[0].DataItems;
+        for (var j = 0; j < registrationDetails.length; j++) {
             receivedPacketSeries.push({
-                name: registrationDetails[i].InterfaceName,
+                name: registrationDetails[j].InterfaceName,
                 data: []
             });
 			
 			transmittedPacketSeries.push({
-                name: registrationDetails[i].InterfaceName,
+                name: registrationDetails[j].InterfaceName,
                 data: []
             });
 			
-			for(var j = 0; j < errorSeries.length; j++)
+			for(var k = 0; k < errorSeries.length; k++)
 			{
-				var drillId = registrationDetails[i].InterfaceName + '-' + j;
-				errorSeries[j].data.push({name: registrationDetails[i].InterfaceName, y: 0, drilldown: drillId})
+				var drillId = registrationDetails[j].InterfaceName + '-' + k;
+				errorSeries[k].data.push({name: registrationDetails[j].InterfaceName, y: 0, drilldown: drillId})
 				errorDrilldown.push({
-					type: 'pie',
+					type: 'line',
 					id: drillId,
 					data: [
-						{name: 'Test A', y: 2}, //return to fix later
-						{name: 'Test B', y: 3},
+						/* {name: 'Test A', y: 2}, //return to fix later
+						{name: 'Test B', y: 3}, */
 					]
 				})
 			}
         }
 
         //move this logic into core library?
-        for (var i = 1; i < messageCount - 1; i++) {
-            var dataItems = $rootScope.currentEthernetData.Messages[i].DataItems;
+        for (var j = 1; j < messageCount - 1; j++) {
+            var dataItems = $rootScope.currentEthernetData[i].Messages[j].DataItems;
 
-            for (var j = 0; j < dataItems.length; j++) {
-                receivedPacketSeries[j].data.push(parseInt(dataItems[j].RxGood));
-				transmittedPacketSeries[j].data.push(parseInt(dataItems[j].TxGood));
+            for (var k = 0; k < dataItems.length; k++) {
+                receivedPacketSeries[k].data.push(parseInt(dataItems[k].RxGood));
+				transmittedPacketSeries[k].data.push(parseInt(dataItems[k].TxGood));
 				
-				errorSeries[0].data[j].y = parseInt(dataItems[j].RxErrors); //probably a better way to handle this
-				errorSeries[1].data[j].y = parseInt(dataItems[j].RxDropped);
-				errorSeries[2].data[j].y = parseInt(dataItems[j].RxOverruns);
-				errorSeries[3].data[j].y = parseInt(dataItems[j].RxFrame);
-				errorSeries[4].data[j].y = parseInt(dataItems[j].TxErrors);
-				errorSeries[5].data[j].y = parseInt(dataItems[j].TxDropped);
-				errorSeries[6].data[j].y = parseInt(dataItems[j].TxOverruns);
-				errorSeries[7].data[j].y = parseInt(dataItems[j].TxCarrier);
-				errorSeries[8].data[j].y = parseInt(dataItems[j].TxCollisions);
+				errorSeries[0].data[k].y = parseInt(dataItems[k].RxErrors); //probably a better way to handle this
+				errorSeries[1].data[k].y = parseInt(dataItems[k].RxDropped);
+				errorSeries[2].data[k].y = parseInt(dataItems[k].RxOverruns);
+				errorSeries[3].data[k].y = parseInt(dataItems[k].RxFrame);
+				errorSeries[4].data[k].y = parseInt(dataItems[k].TxErrors);
+				errorSeries[5].data[k].y = parseInt(dataItems[k].TxDropped);
+				errorSeries[6].data[k].y = parseInt(dataItems[k].TxOverruns);
+				errorSeries[7].data[k].y = parseInt(dataItems[k].TxCarrier);
+				errorSeries[8].data[k].y = parseInt(dataItems[k].TxCollisions);
 				
 				/* errorSeries[0].data[j].y = 2; //test data
 				errorSeries[1].data[j].y = 4;
@@ -524,12 +549,15 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
         }
     };
 		
-		Highcharts.chart('errorChart', errorChart);
-        Highcharts.chart('receivedPacketsChart', receivedPacketsChart);
-		Highcharts.chart('transmittedPacketsChart', transmittedPacketsChart);
+		$scope.charts.push(errorChart);
+		$scope.charts.push(receivedPacketsChart);
+		$scope.charts.push(transmittedPacketsChart);
+		
+		}
     }
-
-    if ($rootScope.currentEthernetData) {
+	
+	if (typeof $rootScope.currentEthernetData !== 'undefined' && $rootScope.currentEthernetData.length > 0) 
+	{
         $scope.loadCharts();
     }
 
@@ -537,145 +565,65 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', function ($scope
 
 myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, $rootScope) {
 
-
+	$scope.charts = [];
+	
     $scope.loadCharts = function () {
-
-        var messageCount = $rootScope.currentSwitchData.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+		
+		for(var i = 0; i < $rootScope.currentSwitchData.length; i++)
+		{
+			var messageCount = $rootScope.currentSwitchData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
         //building series data will go here
         var ingressByteData = [];
         var egressByteData = [];
 		
-		//Gabie 
 		var ingressMulticastData = [];
 		var egressMulticastData = [];
-		//Gabie Errors
-		var ingressPauseData = [];
-		var ingressUndersizeData = [];
-		var ingressFragmentsData = [];
-		var ingressOversizeData = [];
-		var ingressJabberData = [];
-		var ingressRxErrData = [];
-		var ingressFcsErrData = [];
 		
-		var egressPauseData = [];
-		var egressExcessiveData = [];
-		var egressCollisionsData = [];
-		var egressOtherData = [];
-		
-		//Nicole broadcast
 		var ingressBroadcastData = [];
 		var egressBroadcastData = [];
 		
-		//Nicole unicast
 		var ingressUnicastData = [];
 		var egressUnicastData = [];
 
         //move this logic into core library?
-        for (var i = 1; i < messageCount - 1; i++) {
-            var dataItems = $rootScope.currentSwitchData.Messages[i].DataItems;
+        for (var j = 1; j < messageCount - 1; j++) {
+            var dataItems = $rootScope.currentSwitchData[i].Messages[j].DataItems;
 
             var ingressByteTotal = 0;
             var egressByteTotal = 0;
 			
-			//Gabie
 			var ingressMulticastTotal = 0;
 			var egressMulticastTotal = 0;
-			//Gabie Errors
-	/*		var ingressPauseTotal = 0;
-			var ingressUndersizeTotal = 0;
-			var ingressFragmentsTotal = 0;
-			var ingressOversizeTotal = 0;
-			var ingressJabberTotal = 0;
-			var ingressRxErrTotal = 0;
-			var ingressFcsErrTotal = 0;
 			
-			var egressPauseTotal = 0;
-			var egressExcessiveTotal = 0;
-			var egressCollisionsTotal = 0;
-			var egressOtherTotal = 0;
-*/
-			
-			//Nicole broadcast
 			var ingressBroadcastTotal = 0;
 			var egressBroadcastTotal = 0;
-			//Nicole unicast
+			
 			var ingressUnicastTotal = 0;
 			var egressUnicastTotal = 0;
 
-            for (var j = 0; j < dataItems.length - 1; j++) {
-                ingressByteTotal += parseInt(dataItems[j].IngressBytes);
-                egressByteTotal += parseInt(dataItems[j].EgressBytes);
+            for (var k = 0; k < dataItems.length - 1; k++) {
+                ingressByteTotal += parseInt(dataItems[k].IngressBytes);
+                egressByteTotal += parseInt(dataItems[k].EgressBytes);
 				
-				//Gabie
-				ingressMulticastTotal += parseInt(dataItems[j].IngressMulticast);
-				egressMulticastTotal += parseInt(dataItems[j].EgressMulticast);
-				//Gabie Errors
-			/*	if(parseInt(dataItems[j].IngressPause) > 0){
-					ingressPauseTotal += 1;
-				}
-				if(parseInt(dataItems[j].IngressUndersize) > 0){
-					ingressUndersizeTotal =+ 1;
-				}
-				if(parseInt(dataItems[j].IngressFragments) > 0){
-					ingressFragmentsTotal += 1;
-				}
-				if(parseInt(dataItems[j].IngressOversize) > 0){
-					ingressOversizeTotal += 1;
-				}
-				if(parseInt(dataItems[j].IngressJabber) > 0){
-					ingressJabberTotal += 1;
-				}
-				if(parseInt(dataItems[j].IngressRxErr) > 0){
-					ingressRxErrTotal += 1;
-				}
-				if(parseInt(dataItems[j].IngressFscErr) > 0){
-					ingressFcsErrTotal += 1;
-				}
-				if(parseInt(dataItems[j].EgressPause) > 0){
-					egressPauseTotal += 1;
-				}
-				if(parseInt(dataItems[j].EgressExcessive) > 0){
-					egressExcessiveTotal += 1;
-				}
-				if(parseInt(dataItems[j].EgressCollisions) > 0){
-					egressCollisionsTotal += 1;
-				}
-				if(parseInt(dataItems[j].EgressOther) > 0){
-					egressOtherTotal += 1;
-				}*/
-				//Nicole broadcast
-				ingressBroadcastTotal += parseInt(dataItems[j].IngressBroadcast);
-				egressBroadcastTotal += parseInt(dataItems[j].EgressBroadcast);
-				//Nicole unicast
-				ingressUnicastTotal += parseInt(dataItems[j].IngressUnicast);
-				egressUnicastTotal += parseInt(dataItems[j].EgressUnicast);
+				ingressMulticastTotal += parseInt(dataItems[k].IngressMulticast);
+				egressMulticastTotal += parseInt(dataItems[k].EgressMulticast);
+				
+				ingressBroadcastTotal += parseInt(dataItems[k].IngressBroadcast);
+				egressBroadcastTotal += parseInt(dataItems[k].EgressBroadcast);
+				
+				ingressUnicastTotal += parseInt(dataItems[k].IngressUnicast);
+				egressUnicastTotal += parseInt(dataItems[k].EgressUnicast);
             }
             ingressByteData.push(ingressByteTotal);
             egressByteData.push(egressByteTotal);
 		
-			
-			//Gabie
 			ingressMulticastData.push(ingressMulticastTotal);
 			egressMulticastData.push(egressMulticastTotal);
 			
-			/*ingressPauseData.push(ingressPauseTotal);
-			ingressUndersizeData.push(ingressUndersizeTotal);
-			ingressFragmentsData.push(ingressFragmentsTotal);
-			ingressOversizeData.push(ingressOversizeTotal);
-			ingressJabberData.push(ingressJabberTotal);
-			ingressRxErrData.push(ingressRxErrTotal);
-			ingresFcsErrData.push(ingressFcsErrTotal);
-			
-			egressPauseData.push(egressPauseTotal);
-			egressExcessiveData.push(egressExcessiveTotal);
-			egressCollisionsData.push(egressCollisionsTotal);
-			egressOtherData.push(egressOtherTotal);
-		*/
-			//Nicole broadcast
 			ingressBroadcastData.push(ingressBroadcastTotal);
 			egressBroadcastData.push(egressBroadcastTotal);
-			//Nicole unicast
+			
 			ingressUnicastData.push(ingressUnicastTotal);
 			egressUnicastData.push(egressUnicastTotal);
         }
@@ -689,7 +637,6 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
             data: egressByteData
         }];
 		
-		//Gabie
 		var multicastSeries = [{
 			name: 'Ingress',
 			data: ingressMulticastData
@@ -697,43 +644,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			name: 'Egress',
 			data: egressMulticastData
 		}];
-//Gabie Errors
-	/*	var errorsSeries = [{
-			name: 'Ingress Pause',
-			data: ingressPauseData
-		},{
-			name: 'Ingress Undersize',
-			data: ingressUndersizeData
-		},{
-			name: 'Ingress Fragments',
-			data: ingressFragmentsData
-		},{
-			name: 'Ingress Oversize',
-			data: ingressOversizeData
-		},{
-			name: 'Ingress Jabber',
-			data: ingressJabberData
-		},{
-			name: 'Ingress RxErr',
-			data: ingressRxErrData
-		},{
-			name: 'Ingress FcsErr',
-			data: ingresFcsErrData
-		},{ 
-			name: 'Egress Pause',
-			data: egressPauseData
-		},{
-			name: 'Egress Excessive',
-			data: egressExcessiveData
-		},{
-			name: 'Egress Collisions'
-			data: egressCollisionsData
-		},{
-			name: 'Egress Other',
-			data: egressOtherData
-		}];
-*/
-		//Nicole broadcast series
+
 		var broadcastSeries = [{
 			name: 'Ingress',
 			data: ingressBroadcastData
@@ -741,7 +652,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			name: 'Egress',
 			data: egressBroadcastData
 		}];
-		//Nicole unicast series
+
 		var unicastSeries = [{
 			name: 'Ingress',
 			data: ingressUnicastData
@@ -749,6 +660,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 			name: 'Egress',
 			data: egressUnicastData
 		}];
+		
         //does not separate presentation code from logic and data. need to write a directive for this
         var bytesChart =
 		{
@@ -796,8 +708,6 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    series: byteSeries
 		};
 
-        //Gabie
-		//Multicast Chart
 		var multicastChart =
 		{
 			chart: {
@@ -844,8 +754,6 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    series: multicastSeries
 		};
 		
-		//Nicole
-		//Broadcast Chart
 		var broadcastChart =
 		{
 			chart: {
@@ -892,8 +800,6 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    series: broadcastSeries
 		};
 		
-		//Nicole
-		//Unicast Chart
 		var unicastChart =
 		{
 		    chart: {
@@ -940,53 +846,17 @@ myApp.controller('switchController', ['$scope', '$rootScope', function ($scope, 
 		    series: unicastSeries
 		};
 		
-		//Errors Chart
-	/*	var errorsChart =
-		{
-			chart:{
-				type: 'column'
-			},
-			title: {
-				text: 'Errors'
-			},
-			xAxis:{
-				min: 0,
-				title: {
-					text:'Type of Error'
-					}
-			},
-			yAxis: {
-				min: 0,
-				title: {
-					text: 'Number of Errors'
-				}
-			},
-			tooltip: {
-			headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                '<td style="padding:0"><b>{point.y:.1f} mm</b></td></tr>',
-            footerFormat: '</table>',
-            shared: true,
-            useHTML: true	
-			},
-			plotOptions: {
-				column: {
-					pointPadding: 0.2,
-					borderWidth : 0
-				}
-			},
-			series: errorsSeries
-		};
-		*/
-		Highcharts.chart('bytesChart', bytesChart);
-		Highcharts.chart('multicastChart', multicastChart);
-		//Highcharts.chart('errorsChart', errorsChart);
-		Highcharts.chart('broadcastChart', broadcastChart);
-		Highcharts.chart('unicastChart', unicastChart);
+		$scope.charts.push(bytesChart);
+		$scope.charts.push(multicastChart);
+		$scope.charts.push(broadcastChart);
+		$scope.charts.push(unicastChart);
+		
+		}
+		
     }
 
-
-    if ($rootScope.currentSwitchData) {
+	if (typeof $rootScope.currentSwitchData !== 'undefined' && $rootScope.currentSwitchData.length > 0) 
+	{
         $scope.loadCharts();
     }
 

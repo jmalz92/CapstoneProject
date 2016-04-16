@@ -1,7 +1,9 @@
-<div ng-show="currentIPData == null" class="jumbotron" style="margin: 0 auto">
+<div ng-show="currentIPData.length == 0" class="jumbotron" style="margin: 0 auto">
   <h1>IP Table Stat</h1>
   <p>No IP Table stat data found, upload a valid json file</p>
 
 </div>
-<div id="bytesChart"></div>
-<div id="packetsChart"></div>
+
+<div ng-repeat="chart in charts" class="row">
+        <highchart config="chart" class="span10"></highchart>            
+</div>
