@@ -107,79 +107,91 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
 		
 		for(var i = 0; i < $rootScope.currentIPData.length; i++)
 		{
-			 //build default chartData
+		
         var messageCount = $rootScope.currentIPData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
-        //building series data will go here
-        var inputByteData = [];
-        var outputByteData = [];
-        var forwardByteData = [];
+         var inputByteSeries = [];
+         var outputByteSeries = [];
+         var forwardByteSeries = [];
 
-        var inputPacketData = [];
-        var outputPacketData = [];
-        var forwardPacketData = [];
-
+         var inputPacketSeries = [];
+         var outputPacketSeries = [];
+         var forwardPacketSeries = [];
+		
+		
+		var registrationDetails = $rootScope.currentIPData[i].Messages[0].DataItems;
+        for (var j = 0; j < registrationDetails.length; j++) {
+            
+			if (registrationDetails[j].chain == "INPUT") {
+                    inputByteSeries.push({
+					name: registrationDetails[j].id,
+					data: []
+				});
+				
+				inputPacketSeries.push({
+					name: registrationDetails[j].id,
+					data: []
+				});
+            }
+            if (registrationDetails[j].chain == "OUTPUT") {
+                   outputByteSeries.push({
+					name: registrationDetails[j].id,
+					data: []
+				});
+				
+				outputPacketSeries.push({
+					name: registrationDetails[j].id,
+					data: []
+				});
+            }
+            if (registrationDetails[j].chain == "FORWARD") {
+                   forwardByteSeries.push({
+					name: registrationDetails[j].id,
+					data: [],
+					visible: false
+				});
+				
+				forwardPacketSeries.push({
+					name: registrationDetails[j].id,
+					data: [],
+					visible: false
+				});
+            }
+			
+			
+        }
+		
         //move this logic into core library?
         for (var j = 1; j < messageCount - 1; j++) {
             var dataItems = $rootScope.currentIPData[i].Messages[j].DataItems;
-
-            var inputByteTotal = 0;
-            var outputByteTotal = 0;
-            var forwardByteTotal = 0;
-
-            var inputPacketTotal = 0;
-            var outputPacketTotal = 0;
-            var forwardPacketTotal = 0;
-		
+			
+			var inputIndex = 0;
+			var outputIndex = 0;
+			var forwardIndex = 0;
+			
             for (var k = 0; k < dataItems.length - 1; k++) {
                 if (dataItems[k].Chain == "INPUT") {
-                    inputByteTotal += parseInt(dataItems[k].Bytes);
-                    inputPacketTotal += parseInt(dataItems[k].Packets);
+                    inputByteSeries[inputIndex].data.push(parseInt(dataItems[k].Bytes));
+                    inputPacketSeries[inputIndex].data.push(parseInt(dataItems[k].Packets));
+					inputIndex++;
                 }
                 if (dataItems[k].Chain == "OUTPUT") {
-                    outputByteTotal += parseInt(dataItems[k].Bytes);
-                    outputPacketTotal += parseInt(dataItems[k].Packets);
+					outputByteSeries[outputIndex].data.push(parseInt(dataItems[k].Bytes));
+                    outputPacketSeries[outputIndex].data.push(parseInt(dataItems[k].Packets));
+					outputIndex++;
 
                 }
                 if (dataItems[k].Chain == "FORWARD") {
-                    forwardByteTotal += parseInt(dataItems[k].Bytes);
-                    forwardPacketTotal += parseInt(dataItems[k].Packets);
+					forwardByteSeries[forwardIndex].data.push(parseInt(dataItems[k].Bytes));
+                    forwardPacketSeries[forwardIndex].data.push(parseInt(dataItems[k].Packets));
+					forwardIndex++;
                 }
             }
-            inputByteData.push(inputByteTotal);
-            outputByteData.push(outputByteTotal);
-            forwardByteData.push(forwardByteTotal);
-
-            inputPacketData.push(inputPacketTotal);
-            outputPacketData.push(outputPacketTotal);
-            forwardPacketData.push(forwardPacketTotal);
         }
 
-        //fill series data;
-        var byteSeries = [{
-            name: 'Input',
-            data: inputByteData
-        }, {
-            name: 'Output',
-            data: outputByteData
-        }, {
-            name: 'Forward',
-            data: forwardByteData
-        }];
-
-        var packetSeries = [{
-            name: 'Input',
-            data: inputPacketData
-        }, {
-            name: 'Output',
-            data: outputPacketData
-        }, {
-            name: 'Forward',
-            data: forwardPacketData
-        }];
 
         //does not separate presentation code from logic and data. need to write a directive for this
-        var bytesChart =
+        var inputBytesChart =
 		{
 			chart: {
 				type: 'line',
@@ -187,7 +199,7 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
             },
 		    title:
 			{
-			    text: 'Bytes',
+			    text: 'Input Bytes',
 			    x: -20 //center
 			},
 		    credits: {
@@ -227,10 +239,10 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
 		    },
-		    series: byteSeries
+		    series: inputByteSeries
 		};
 
-        var packetsChart =
+        var inputPacketsChart =
 		{
 			chart: {
 				type: 'line',
@@ -238,7 +250,7 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
             },
 		    title:
 			{
-			    text: 'Packets',
+			    text: 'Input Packets',
 			    x: -20 //center
 			},
 		    credits: {
@@ -278,11 +290,221 @@ myApp.controller('ipController', ['$scope', '$rootScope', function ($scope, $roo
 		    tooltip: {
 		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
 		    },
-		    series: packetSeries
+		    series: inputPacketSeries
+		};
+		
+		 var outputBytesChart =
+		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
+		    title:
+			{
+			    text: 'Output Bytes',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Bytes'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: outputByteSeries
 		};
 
-		$scope.charts.push(bytesChart);
-		$scope.charts.push(packetsChart);
+        var outputPacketsChart =
+		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
+		    title:
+			{
+			    text: 'Output Packets',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Packets'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: outputPacketSeries
+		};
+		
+		 var forwardBytesChart =
+		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
+		    title:
+			{
+			    text: 'Forward Bytes',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Bytes'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: forwardByteSeries
+		};
+
+        var forwardPacketsChart =
+		{
+			chart: {
+				type: 'line',
+				zoomType: 'x'
+            },
+		    title:
+			{
+			    text: 'Forward Packets',
+			    x: -20 //center
+			},
+		    credits: {
+		        enabled: false
+		    },
+		    rangeSelector: {
+		        enabled: false //can probably use this in the future
+		    },
+		    xAxis:
+			{
+			    title:
+				{
+				    text: 'Elapsed Time (mins)'
+				},
+			    labels: {
+			        formatter: function () {
+			            return (this.value * 2);
+			        }
+			    }
+			},
+		    yAxis: {
+		        title:
+				{
+				    text: 'Packets'
+				},
+		        plotLines: [{
+		            value: 0,
+		            width: 2,
+		            color: 'silver'
+		        }]
+		    },
+		    plotOptions: {
+		        series: {
+		            compare: 'value'
+		        }
+		    },
+		    tooltip: {
+		        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+		    },
+		    series: forwardPacketSeries
+		};
+
+		$scope.charts.push(inputBytesChart);
+		$scope.charts.push(inputPacketsChart);
+		
+		$scope.charts.push(outputBytesChart);
+		$scope.charts.push(outputPacketsChart);
+		
+		$scope.charts.push(forwardBytesChart);
+		$scope.charts.push(forwardPacketsChart);
 		
 		}
 		
