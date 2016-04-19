@@ -571,106 +571,106 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
             var messageCount = $rootScope.currentSwitchData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
             //building series data will go here
-            var ingressByteData = [];
-            var egressByteData = [];
+            var ingressByteSeries = [];
+            var egressByteSeries = [];
 
-            var ingressMulticastData = [];
-            var egressMulticastData = [];
+            var ingressMulticastSeries = [];
+            var egressMulticastSeries = [];
 
-            var ingressBroadcastData = [];
-            var egressBroadcastData = [];
+            var ingressBroadcastSeries = [];
+            var egressBroadcastSeries = [];
 
-            var ingressUnicastData = [];
-            var egressUnicastData = [];
+            var ingressUnicastSeries = [];
+            var egressUnicastSeries = [];
+
+
+            var registrationDetails = $rootScope.currentSwitchData[i].Messages[0].DataItems;
+            for (var j = 0; j < registrationDetails.length; j++) {
+
+                ingressByteSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+                egressByteSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+
+                ingressMulticastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+                egressMulticastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+
+                ingressBroadcastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+                egressBroadcastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+
+                ingressUnicastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+                egressUnicastSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+
+            }
 
             //move this logic into core library?
             for (var j = 1; j < messageCount - 1; j++) {
                 var dataItems = $rootScope.currentSwitchData[i].Messages[j].DataItems;
 
-                var ingressByteTotal = 0;
-                var egressByteTotal = 0;
-
-                var ingressMulticastTotal = 0;
-                var egressMulticastTotal = 0;
-
-                var ingressBroadcastTotal = 0;
-                var egressBroadcastTotal = 0;
-
-                var ingressUnicastTotal = 0;
-                var egressUnicastTotal = 0;
-
                 for (var k = 0; k < dataItems.length - 1; k++) {
-                    ingressByteTotal += parseInt(dataItems[k].IngressBytes);
-                    egressByteTotal += parseInt(dataItems[k].EgressBytes);
 
-                    ingressMulticastTotal += parseInt(dataItems[k].IngressMulticast);
-                    egressMulticastTotal += parseInt(dataItems[k].EgressMulticast);
+                    ingressByteSeries[k].data.push(parseInt(dataItems[k].IngressBytes));
+                    egressByteSeries[k].data.push(parseInt(dataItems[k].EgressBytes));
 
-                    ingressBroadcastTotal += parseInt(dataItems[k].IngressBroadcast);
-                    egressBroadcastTotal += parseInt(dataItems[k].EgressBroadcast);
+                    ingressMulticastSeries[k].data.push(parseInt(dataItems[k].IngressMulticast));
+                    egressMulticastSeries[k].data.push(parseInt(dataItems[k].EgressMulticast));
 
-                    ingressUnicastTotal += parseInt(dataItems[k].IngressUnicast);
-                    egressUnicastTotal += parseInt(dataItems[k].EgressUnicast);
+                    ingressBroadcastSeries[k].data.push(parseInt(dataItems[k].IngressBroadcast));
+                    egressBroadcastSeries[k].data.push(parseInt(dataItems[k].EgressBroadcast));
+
+                    ingressUnicastSeries[k].data.push(parseInt(dataItems[k].IngressuUnicast));
+                    egressUnicastSeries[k].data.push(parseInt(dataItems[k].EgressUnicast));
+
                 }
-                ingressByteData.push(ingressByteTotal);
-                egressByteData.push(egressByteTotal);
-
-                ingressMulticastData.push(ingressMulticastTotal);
-                egressMulticastData.push(egressMulticastTotal);
-
-                ingressBroadcastData.push(ingressBroadcastTotal);
-                egressBroadcastData.push(egressBroadcastTotal);
-
-                ingressUnicastData.push(ingressUnicastTotal);
-                egressUnicastData.push(egressUnicastTotal);
             }
 
-            //fill series data;
-            var byteSeries = [{
-                name: 'Ingress',
-                data: ingressByteData
-            }, {
-                name: 'Egress',
-                data: egressByteData
-            }];
-
-            var multicastSeries = [{
-                name: 'Ingress',
-                data: ingressMulticastData
-            }, {
-                name: 'Egress',
-                data: egressMulticastData
-            }];
-
-            var broadcastSeries = [{
-                name: 'Ingress',
-                data: ingressBroadcastData
-            }, {
-                name: 'Egress',
-                data: egressBroadcastData
-            }];
-
-            var unicastSeries = [{
-                name: 'Ingress',
-                data: ingressUnicastData
-            }, {
-                name: 'Egress',
-                data: egressUnicastData
-            }];
-
             //does not separate presentation code from logic and data. need to write a directive for this
-            var bytesChart = $scope.buildSwitchChart('Bytes', 'Bytes', byteSeries);
+            var ingressBytesChart = $scope.buildSwitchChart('Ingress Bytes', 'Bytes', ingressByteSeries);
+            var egressBytesChart = $scope.buildSwitchChart('Egress Bytes', 'Bytes', egressByteSeries);
+
+            var ingressMulticastChart = $scope.buildSwitchChart('Ingress Multicast', 'Packets', ingressMulticastSeries);
+            var egressMulticastChart = $scope.buildSwitchChart('Egress Multicast', 'Packets', egressMulticastSeries);
+
+            var ingressBroadcastChart = $scope.buildSwitchChart('Ingress Broadcast', 'Packets', ingressBroadcastSeries);
+            var egressBroadcastChart = $scope.buildSwitchChart('Egress Broadcast', 'Packets', egressBroadcastSeries);
+
+            var ingressUnicastChart = $scope.buildSwitchChart('Ingress Unicast', 'Packets', ingressUnicastSeries);
+            var egressUnicastChart = $scope.buildSwitchChart('Egress Unicast', 'Packets', egressUnicastSeries);
 
 
-            var multicastChart = $scope.buildSwitchChart('Multicast', 'Packets', byteSeries);
-            var broadcastChart = $scope.buildSwitchChart('Broadcast', 'Packets', broadcastSeries);
-            var unicastChart = $scope.buildSwitchChart('Unicast', 'Packets', unicastSeries);
+            $scope.charts.push(ingressBytesChart);
+            $scope.charts.push(egressBytesChart);
 
+            $scope.charts.push(ingressMulticastChart);
+            $scope.charts.push(egressMulticastChart);
 
-            $scope.charts.push(bytesChart);
-            $scope.charts.push(multicastChart);
-            $scope.charts.push(broadcastChart);
-            $scope.charts.push(unicastChart);
+            $scope.charts.push(ingressBroadcastChart);
+            $scope.charts.push(egressBroadcastChart);
+
+            $scope.charts.push(ingressUnicastChart);
+            $scope.charts.push(egressUnicastChart);
 
         }
 
