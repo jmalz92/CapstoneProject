@@ -9,10 +9,14 @@ var myApp = angular.module('myApp', ['ngRoute', 'highcharts-ng']);
 
 
 myApp.run(function ($rootScope) {
-    $rootScope.currentIPData = [];
-    $rootScope.currentEthernetData = [];
-    $rootScope.currentSwitchData = [];
 
+    $rootScope.currentData = {
+        IPStats: [],
+        EthernetStats: [],
+        SwitchStats: []
+    };
+
+    $rootScope.currentInterval = 2;
 })
 
 myApp.config(['$routeProvider',
@@ -44,40 +48,52 @@ myApp.config(['$routeProvider',
 //change http to file upload control
 myApp.controller('homeController', ['$scope', '$http', '$routeParams', '$location', '$rootScope', function ($scope, $http, $routeParams, $location, $rootScope) {
 
+    $scope.interval = 2;
+
     $scope.filesToUpload = [];
+
+    $scope.updateInterval = function () {
+        $rootScope.currentInterval = $scope.interval;
+    }
 
     $scope.selectFile = function () {
         var files = event.target.files;
 
         for (var i = 0; i < files.length; i++) {
             var fr = new FileReader();
-            fr.onload = $scope.receivedText;
+
+            fr.onload = (function (f) {
+                return function (e) {
+                    var lines = e.target.result;
+                    var name = f.name;
+                    $scope.filesToUpload.push({
+                        Name: name,
+                        Data: JSON.parse(lines)
+                    });
+                };
+            })(files[i]);
+
             fr.readAsText(files[i]);
         }
 
     };
 
-    $scope.receivedText = function (e) {
-        var lines = e.target.result;
-        $scope.filesToUpload.push(JSON.parse(lines));
-    }
-
     $scope.upload = function () {
-        var data = $scope.filesToUpload;
+        var files = $scope.filesToUpload;
         var path = null;
 
-        for (var i = 0; i < data.length; i++) {
-            if (data[i]) {
-                if (data[i].LogType == "IPTable") {
-                    $rootScope.currentIPData.push(data[i]);
+        for (var i = 0; i < files.length; i++) {
+            if (files[i] && files[i].Data) {
+                if (files[i].Data.LogType == "IPTable") {
+                    $rootScope.currentData.IPStats.push(files[i]);
                     path = '/iptable/true';
                 }
-                else if (data[i].LogType == "Switch") {
-                    $rootScope.currentSwitchData.push(data[i]);
+                else if (files[i].Data.LogType == "Switch") {
+                    $rootScope.currentData.SwitchStats.push(files[i]);
                     path = '/switch/true';
                 }
-                else if (data[i].LogType == "Ethernet") {
-                    $rootScope.currentEthernetData.push(data[i]);
+                else if (files[i].Data.LogType == "Ethernet") {
+                    $rootScope.currentData.EthernetStats.push(files[i]);
                     path = '/ethernet/true';
                 }
 
@@ -101,7 +117,17 @@ myApp.controller('homeController', ['$scope', '$http', '$routeParams', '$locatio
 
 myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', function ($scope, $rootScope, $routeParams) {
 
-    $scope.charts = [];
+    $scope.files = [];
+    $scope.selectedIndex = 0;
+
+    $scope.$watch(function () {
+        return $rootScope.currentInterval;
+    }, function () {
+        if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.IPStats.length > 0) {
+            $scope.files = [];
+            $scope.loadCharts();
+        }
+    }, true);
 
     //duplicate make a chart building service
     $scope.buildIPChart = function (title, units, series) {
@@ -131,7 +157,7 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                 },
                 labels: {
                     formatter: function () {
-                        return (this.value * 2);
+                        return (this.value * $rootScope.currentInterval);
                     }
                 }
             },
@@ -160,11 +186,29 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
         return chart;
     }
 
+    $scope.selectFile = function (index) {
+        $scope.selectedIndex = index;
+    }
+
+    $scope.isShowing = function (index) {
+        return $scope.selectedIndex === index;
+    }
+
     $scope.loadCharts = function () {
 
-        for (var i = 0; i < $rootScope.currentIPData.length; i++) {
 
-            var messageCount = $rootScope.currentIPData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+        for (var i = 0; i < $rootScope.currentData.IPStats.length; i++) {
+            $scope.files.push({
+                Name: $rootScope.currentData.IPStats[i].Name,
+                Charts: []
+            });
+        }
+
+
+        for (var i = 0; i < $rootScope.currentData.IPStats.length; i++) {
+
+            var ipFile = $rootScope.currentData.IPStats[i];
+            var messageCount = ipFile.Data.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
             var inputByteSeries = [];
             var outputByteSeries = [];
@@ -174,8 +218,12 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
             var outputPacketSeries = [];
             var forwardPacketSeries = [];
 
+            var inputBandwidthSeries = [];
+            var outputBandwidthSeries = [];
+            var forwardBandwidthSeries = [];
 
-            var registrationDetails = $rootScope.currentIPData[i].Messages[0].DataItems;
+
+            var registrationDetails = ipFile.Data.Messages[0].DataItems;
             for (var j = 0; j < registrationDetails.length; j++) {
 
                 if (registrationDetails[j].chain == "INPUT") {
@@ -188,6 +236,11 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                         name: registrationDetails[j].id,
                         data: []
                     });
+
+                    inputBandwidthSeries.push({
+                        name: registrationDetails[j].id,
+                        data: []
+                    });
                 }
                 if (registrationDetails[j].chain == "OUTPUT") {
                     outputByteSeries.push({
@@ -196,6 +249,11 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                     });
 
                     outputPacketSeries.push({
+                        name: registrationDetails[j].id,
+                        data: []
+                    });
+
+                    outputBandwidthSeries.push({
                         name: registrationDetails[j].id,
                         data: []
                     });
@@ -212,14 +270,18 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                         data: [],
                         visible: false
                     });
+
+                    forwardBandwidthSeries.push({
+                        name: registrationDetails[j].id,
+                        data: [],
+                        visible: false
+                    });
                 }
-
-
             }
 
             //move this logic into core library?
             for (var j = 1; j < messageCount - 1; j++) {
-                var dataItems = $rootScope.currentIPData[i].Messages[j].DataItems;
+                var dataItems = ipFile.Data.Messages[j].DataItems;
 
                 var inputIndex = 0;
                 var outputIndex = 0;
@@ -229,18 +291,59 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                     if (dataItems[k].Chain == "INPUT") {
                         inputByteSeries[inputIndex].data.push(parseInt(dataItems[k].Bytes));
                         inputPacketSeries[inputIndex].data.push(parseInt(dataItems[k].Packets));
+
+                        if (j == 1) {
+                            inputBandwidthSeries[inputIndex].data.push(0);
+                        } else {
+
+                            var prevData = ipFile.Data.Messages[j - 1].DataItems[inputIndex];
+
+                            var bytesPrevious = parseInt(prevData.Bytes);
+                            var bytesCurrent = parseInt(dataItems[inputIndex].Bytes);
+
+                            inputBandwidthSeries[inputIndex].data.push(((bytesCurrent - bytesPrevious) * .008) / ($rootScope.currentInterval * 60)); //convert B/s to kb/s
+                        }
+
                         inputIndex++;
                     }
                     if (dataItems[k].Chain == "OUTPUT") {
                         outputByteSeries[outputIndex].data.push(parseInt(dataItems[k].Bytes));
                         outputPacketSeries[outputIndex].data.push(parseInt(dataItems[k].Packets));
-                        outputIndex++;
 
+                        if (j == 1) {
+                            outputBandwidthSeries[outputIndex].data.push(0);
+                        } else {
+
+                            var prevData = ipFile.Data.Messages[j - 1].DataItems[outputIndex];
+
+                            var bytesPrevious = parseInt(prevData.Bytes);
+                            var bytesCurrent = parseInt(dataItems[outputIndex].Bytes);
+
+                            //will need to divide on interval once its implemented
+                            outputBandwidthSeries[outputIndex].data.push(((bytesCurrent - bytesPrevious) * .008) / ($rootScope.currentInterval * 60)); //convert B/s to kb/s
+                        }
+
+                        outputIndex++;
                     }
                     if (dataItems[k].Chain == "FORWARD") {
                         forwardByteSeries[forwardIndex].data.push(parseInt(dataItems[k].Bytes));
                         forwardPacketSeries[forwardIndex].data.push(parseInt(dataItems[k].Packets));
+
+                        if (j == 1) {
+                            forwardBandwidthSeries[forwardIndex].data.push(0);
+                        } else {
+
+                            var prevData = ipFile.Data.Messages[j - 1].DataItems[forwardIndex];
+
+                            var bytesPrevious = parseInt(prevData.Bytes);
+                            var bytesCurrent = parseInt(dataItems[forwardIndex].Bytes);
+
+                            //will need to divide on interval once its implemented
+                            forwardBandwidthSeries[forwardIndex].data.push(((bytesCurrent - bytesPrevious) * .008) / ($rootScope.currentInterval * 60)); //convert B/s to kb/s
+                        }
+
                         forwardIndex++;
+
                     }
                 }
             }
@@ -248,30 +351,35 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
             //does not separate presentation code from logic and data. need to write a directive for this
             var inputBytesChart = $scope.buildIPChart('Input Bytes', 'Bytes', inputByteSeries);
             var inputPacketsChart = $scope.buildIPChart('Input Packets', 'Packets', inputPacketSeries);
+            var inputBandwidthChart = $scope.buildIPChart('Input Bandwidth', 'kb/s', inputBandwidthSeries);
 
             var outputBytesChart = $scope.buildIPChart('Output Bytes', 'Bytes', outputByteSeries);
             var outputPacketsChart = $scope.buildIPChart('Output Packets', 'Packets', outputPacketSeries);
+            var outputBandwidthChart = $scope.buildIPChart('Output Bandwidth', 'kb/s', outputBandwidthSeries);
 
             var forwardBytesChart = $scope.buildIPChart('Forward Bytes', 'Bytes', forwardByteSeries);
             var forwardPacketsChart = $scope.buildIPChart('Forward Packets', 'Packets', forwardPacketSeries);
+            var forwardBandwidthChart = $scope.buildIPChart('Forward Bandwidth', 'kb/s', forwardBandwidthSeries);
 
 
-            $scope.charts.push(inputBytesChart);
-            $scope.charts.push(inputPacketsChart);
+            $scope.files[i].Charts.push(inputBytesChart);
+            $scope.files[i].Charts.push(inputPacketsChart);
+            $scope.files[i].Charts.push(inputBandwidthChart);
 
-            $scope.charts.push(outputBytesChart);
-            $scope.charts.push(outputPacketsChart);
+            $scope.files[i].Charts.push(outputBytesChart);
+            $scope.files[i].Charts.push(outputPacketsChart);
+            $scope.files[i].Charts.push(outputBandwidthChart);
 
-            $scope.charts.push(forwardBytesChart);
-            $scope.charts.push(forwardPacketsChart);
+            $scope.files[i].Charts.push(forwardBytesChart);
+            $scope.files[i].Charts.push(forwardPacketsChart);
+            $scope.files[i].Charts.push(forwardBandwidthChart);
 
         }
+
+
     }
 
-    if (typeof $rootScope.currentIPData !== 'undefined' &&
-	typeof $routeParams.uploadRedirect !== 'undefined' &&
-        //$routeParams.uploadRedirect !== 'false' && need to figure out a way to persist charts through navigation
-	$rootScope.currentIPData.length > 0) {
+    if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.IPStats.length > 0) {
         $scope.loadCharts();
     }
 
@@ -281,7 +389,17 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
 
 myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', function ($scope, $rootScope, $routeParams) {
 
-    $scope.charts = [];
+    $scope.files = [];
+    $scope.selectedIndex = 0;
+
+    $scope.$watch(function () {
+        return $rootScope.currentInterval;
+    }, function () {
+        if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.EthernetStats.length > 0) {
+            $scope.files = [];
+            $scope.loadCharts();
+        }
+    }, true);
 
     $scope.buildEthernetChart = function (title, units, series) {
         var chart = {
@@ -310,7 +428,7 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                 },
                 labels: {
                     formatter: function () {
-                        return (this.value * 2);
+                        return (this.value * $rootScope.currentInterval);
                     }
                 }
             },
@@ -339,10 +457,28 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
         return chart;
     }
 
+    $scope.selectFile = function (index) {
+        $scope.selectedIndex = index;
+    }
+
+    $scope.isShowing = function (index) {
+        return $scope.selectedIndex === index;
+    }
+
     $scope.loadCharts = function () {
 
-        for (var i = 0; i < $rootScope.currentEthernetData.length; i++) {
-            var messageCount = $rootScope.currentEthernetData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+
+        for (var i = 0; i < $rootScope.currentData.EthernetStats.length; i++) {
+            $scope.files.push({
+                Name: $rootScope.currentData.EthernetStats[i].Name,
+                Charts: []
+            });
+        }
+
+        for (var i = 0; i < $rootScope.currentData.EthernetStats.length; i++) {
+
+            var ethernetFile = $rootScope.currentData.EthernetStats[i];
+            var messageCount = ethernetFile.Data.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
             //fill series data;
             var receivedPacketSeries = [];
@@ -392,7 +528,7 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
 
 
             //get series categories from registration message
-            var registrationDetails = $rootScope.currentEthernetData[i].Messages[0].DataItems;
+            var registrationDetails = ethernetFile.Data.Messages[0].DataItems;
             for (var j = 0; j < registrationDetails.length; j++) {
                 receivedPacketSeries.push({
                     name: registrationDetails[j].InterfaceName,
@@ -420,7 +556,7 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
 
             //move this logic into core library?
             for (var j = 1; j < messageCount - 1; j++) {
-                var dataItems = $rootScope.currentEthernetData[i].Messages[j].DataItems;
+                var dataItems = ethernetFile.Data.Messages[j].DataItems;
 
                 for (var k = 0; k < dataItems.length; k++) {
                     receivedPacketSeries[k].data.push(parseInt(dataItems[k].RxGood));
@@ -491,14 +627,17 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                 }
             };
 
-            $scope.charts.push(errorChart);
-            $scope.charts.push(receivedPacketsChart);
-            $scope.charts.push(transmittedPacketsChart);
+
+            $scope.files[i].Charts.push(errorChart);
+
+            $scope.files[i].Charts.push(receivedPacketsChart);
+            $scope.files[i].Charts.push(transmittedPacketsChart);
+
 
         }
     }
 
-    if (typeof $rootScope.currentEthernetData !== 'undefined' && $rootScope.currentEthernetData.length > 0) {
+    if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.EthernetStats.length > 0) {
         $scope.loadCharts();
     }
 
@@ -506,7 +645,18 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
 
 myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', function ($scope, $rootScope, $routeParams) {
 
-    $scope.charts = [];
+    $scope.files = [];
+    $scope.selectedIndex = 0;
+
+
+    $scope.$watch(function () {
+        return $rootScope.currentInterval;
+    }, function () {
+        if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.SwitchStats.length > 0) {
+            $scope.files = [];
+            $scope.loadCharts();
+        }
+    }, true);
 
     //duplicate make a chart building service
     $scope.buildSwitchChart = function (title, units, series) {
@@ -536,7 +686,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                 },
                 labels: {
                     formatter: function () {
-                        return (this.value * 2);
+                        return (this.value * $rootScope.currentInterval);
                     }
                 }
             },
@@ -565,10 +715,27 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
         return chart;
     }
 
+    $scope.selectFile = function (index) {
+        $scope.selectedIndex = index;
+    }
+
+    $scope.isShowing = function (index) {
+        return $scope.selectedIndex === index;
+    }
+
     $scope.loadCharts = function () {
 
-        for (var i = 0; i < $rootScope.currentSwitchData.length; i++) {
-            var messageCount = $rootScope.currentSwitchData[i].Messages.length - 2; //dont take into account the registration message or the mock obj at the end
+        for (var i = 0; i < $rootScope.currentData.SwitchStats.length; i++) {
+            $scope.files.push({
+                Name: $rootScope.currentData.SwitchStats[i].Name,
+                Charts: []
+            });
+        }
+
+
+        for (var i = 0; i < $rootScope.currentData.SwitchStats.length; i++) {
+            var switchFile = $rootScope.currentData.SwitchStats[i];
+            var messageCount = switchFile.Data.Messages.length - 2; //dont take into account the registration message or the mock obj at the end
 
             //building series data will go here
             var ingressByteSeries = [];
@@ -583,8 +750,11 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
             var ingressUnicastSeries = [];
             var egressUnicastSeries = [];
 
+            var ingressBandwidthSeries = [];
+            var egressBandwidthSeries = [];
 
-            var registrationDetails = $rootScope.currentSwitchData[i].Messages[0].DataItems;
+
+            var registrationDetails = switchFile.Data.Messages[0].DataItems;
             for (var j = 0; j < registrationDetails.length; j++) {
 
                 ingressByteSeries.push({
@@ -622,12 +792,19 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                     name: registrationDetails[j].ID,
                     data: []
                 });
-
+                ingressBandwidthSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
+                egressBandwidthSeries.push({
+                    name: registrationDetails[j].ID,
+                    data: []
+                });
             }
 
             //move this logic into core library?
             for (var j = 1; j < messageCount - 1; j++) {
-                var dataItems = $rootScope.currentSwitchData[i].Messages[j].DataItems;
+                var dataItems = switchFile.Data.Messages[j].DataItems;
 
                 for (var k = 0; k < dataItems.length - 1; k++) {
 
@@ -643,6 +820,23 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                     ingressUnicastSeries[k].data.push(parseInt(dataItems[k].IngressuUnicast));
                     egressUnicastSeries[k].data.push(parseInt(dataItems[k].EgressUnicast));
 
+                    if (j == 1) {
+                        ingressBandwidthSeries[k].data.push(0);
+                        egressBandwidthSeries[k].data.push(0);
+                    } else {
+
+                        var prevData = switchFile.Data.Messages[j - 1].DataItems[k];
+
+                        var ingressPrevious = parseInt(prevData.IngressBytes);
+                        var ingressCurrent = parseInt(dataItems[k].IngressBytes);
+                        var egressPrevious = parseInt(prevData.EgressBytes);
+                        var egressCurrent = parseInt(dataItems[k].EgressBytes);
+
+                        //will need to divide on interval once its implemented
+                        ingressBandwidthSeries[k].data.push(((ingressCurrent - ingressPrevious) * .008) / ($rootScope.currentInterval * 60)); //convert B/s to kb/s
+                        egressBandwidthSeries[k].data.push(((egressCurrent - egressPrevious) * .008) / ($rootScope.currentInterval * 60));
+
+                    }
                 }
             }
 
@@ -659,24 +853,29 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
             var ingressUnicastChart = $scope.buildSwitchChart('Ingress Unicast', 'Packets', ingressUnicastSeries);
             var egressUnicastChart = $scope.buildSwitchChart('Egress Unicast', 'Packets', egressUnicastSeries);
 
+            var ingressBandwidthChart = $scope.buildSwitchChart('Ingress Bandwidth', 'kb/s', ingressBandwidthSeries);
+            var egressBandwidthChart = $scope.buildSwitchChart('Egress Bandwidth', 'kb/s', egressBandwidthSeries);
 
-            $scope.charts.push(ingressBytesChart);
-            $scope.charts.push(egressBytesChart);
+            $scope.files[i].Charts.push(ingressBytesChart);
+            $scope.files[i].Charts.push(egressBytesChart);
 
-            $scope.charts.push(ingressMulticastChart);
-            $scope.charts.push(egressMulticastChart);
+            $scope.files[i].Charts.push(ingressMulticastChart);
+            $scope.files[i].Charts.push(egressMulticastChart);
 
-            $scope.charts.push(ingressBroadcastChart);
-            $scope.charts.push(egressBroadcastChart);
+            $scope.files[i].Charts.push(ingressBroadcastChart);
+            $scope.files[i].Charts.push(egressBroadcastChart);
 
-            $scope.charts.push(ingressUnicastChart);
-            $scope.charts.push(egressUnicastChart);
+            $scope.files[i].Charts.push(ingressUnicastChart);
+            $scope.files[i].Charts.push(egressUnicastChart);
+
+            $scope.files[i].Charts.push(ingressBandwidthChart);
+            $scope.files[i].Charts.push(egressBandwidthChart);
 
         }
 
     }
 
-    if (typeof $rootScope.currentSwitchData !== 'undefined' && $rootScope.currentSwitchData.length > 0) {
+    if (typeof $rootScope.currentData !== 'undefined' && $rootScope.currentData.SwitchStats.length > 0) {
         $scope.loadCharts();
     }
 

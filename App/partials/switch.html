@@ -1,9 +1,12 @@
-<div ng-show="currentSwitchData.length == 0" class="jumbotron" style="margin: 0 auto">
-  <h1>Switch Stat</h1>
-  <p>No Switch stat data found, upload a valid json file</p>
-
+<div ng-show="currentData.SwitchStats.length == 0" class="jumbotron" style="margin: 0 auto">
+    <h1>Switch Stat</h1>
+    <p>No Switch stat data found, upload a valid json file</p>
 </div>
-
-<div ng-repeat="chart in charts" class="row">
-        <highchart config="chart" class="span10"></highchart>            
+<ul class="nav nav-tabs">
+    <li ng-repeat="file in files" ng-class="{'active':selectedIndex == $index}" ng-click="selectFile($index)"><a>{{file.Name}}</a></li>
+</ul>
+<div ng-repeat="file in files" ng-show="isShowing($index)" class="row">
+    <div ng-repeat="chart in file.Charts" class="row" style="padding-top: 30px; padding-bottom: 30px; border-bottom: 2px dashed #2d2d2d">
+        <highchart config="chart" class="span10"></highchart>
+    </div>
 </div>

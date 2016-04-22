@@ -1,80 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>NLAT - Network Log Analysis Tool</title>
-
-<script src="https://code.angularjs.org/1.4.8/angular.js"></script>
-<script src="https://code.angularjs.org/1.4.8/angular-route.js"></script>
-<script src="app.js"></script>
-<script src="js/jquery.js"></script>
-<script src="js/bootstrap.js"></script>
-<script src="https://code.highcharts.com/stock/highstock.js"></script>
-<script src="https://code.highcharts.com/modules/exporting.js"></script>
-<script src="https://code.highcharts.com/modules/data.js"></script>
-<script src="https://code.highcharts.com/modules/drilldown.js"></script>
-<script src="js/highcharts-ng.js"></script>
-<link href="css/bootstrap.css" rel="stylesheet">
-<link href="css/site.css" rel="stylesheet">
-<link href="css/font-awesome-4.5.0/css/font-awesome.css" rel="stylesheet">
-
+    <title>NLAT - Network Log Analysis Tool</title>
+    <script src="https://code.angularjs.org/1.4.8/angular.js"></script>
+    <script src="https://code.angularjs.org/1.4.8/angular-route.js"></script>
+    <script src="app.js"></script>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/data.js"></script>
+    <script src="https://code.highcharts.com/modules/drilldown.js"></script>
+    <script src="js/highcharts-ng.js"></script>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/font-awesome-4.5.0/css/font-awesome.css" rel="stylesheet">
 
 </head>
-<body ng-app="myApp"> 
-<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
-	<div class="container">
-		<!-- Brand and toggle get grouped for better mobile display -->
-		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-				<span class="sr-only">Toggle navigation</span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-			</button>
-			<a class="navbar-brand" href="#">NLAT</a>
-		</div>
-		<!-- Collect the nav links, forms, and other content for toggling -->
-		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-		<ul class="nav navbar-nav">
-        <li><a href="#/iptable">IP Table</a></li>
-		<li><a href="#/switch">Switch</a></li>
-		<li><a href="#/ethernet">Ethernet</a></li>
-        
-      </ul>
-      
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-upload"><span> Upload</span></i></a></li>
-      </ul>
-		</div>
-		<!-- /.navbar-collapse -->
-		
-	</div>
-	
-	<!-- /.container -->
-</nav>
-<div id="myModal" class="modal fade" role="dialog" ng-controller="homeController">
-  <div class="modal-dialog">
+<body ng-app="myApp">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation" ng-controller="homeController">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">NLAT</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-left">
+                    <li><a href="#/iptable/false">IP Table</a></li>
+                    <li><a href="#/switch/false">Switch</a></li>
+                    <li><a href="#/ethernet/false">Ethernet</a></li>
+                </ul>
 
-    <!-- Modal content-->
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Upload Log File</h4>
-      </div>
-      <div class="modal-body">
-        <p>Select a file</p>
-		<input type="file" id="fileSelector" custom-on-change="selectFile" multiple/>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="upload()">Upload</button>
-      </div>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-upload"><span> Upload</span></i></a></li>
+                </ul>
+                <form class="navbar-form navbar-right">
+                    <div class="form-group">
+                        <label class="control-label" for="inputInterval">Interval</label>
+                        <input type="number" id="inputInterval" ng-model="interval" min="1" max="60" class="form-control">
+                    </div>
+                    <button ng-click="updateInterval()" class="btn btn-default">Update</button>
+                </form>
+            </div>
+            <!-- /.navbar-collapse -->
+
+        </div>
+
+        <!-- /.container -->
+    </nav>
+    <div id="myModal" class="modal fade" role="dialog" ng-controller="homeController">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Upload Log File</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Select a file</p>
+                    <input type="file" id="fileSelector" custom-on-change="selectFile" multiple />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="upload()">Upload</button>
+                </div>
+            </div>
+        </div>
     </div>
-
-  </div>
-</div>
-<!-- ng-view directive to tell AngularJS where to inject content pages -->
-<div ng-view class="bodyContent"></div>
-  
+    <!-- ng-view directive to tell AngularJS where to inject content pages -->
+    <div ng-view class="bodyContent"></div>
 
 </body>
 </html>
