@@ -1,0 +1,349 @@
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#Definitions" ng-click="$event.preventDefault()" data-toggle="tab" aria-expanded="true">Definitions</a></li>
+  <li class=""><a href="#Errors" ng-click="$event.preventDefault()" data-toggle="tab" aria-expanded="false">Errors</a></li>
+  <li class=""><a href="#Info" ng-click="$event.preventDefault()" data-toggle="tab" aria-expanded="false">Chart info</a></li>
+  <li class=""><a href="#How" ng-click="$event.preventDefault()" data-toggle="tab" aria-expanded="false">How To</a></li>
+</ul>
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active in" id="Definitions">
+     <table border="1">
+			<tr>
+				<td>IP Tables</td>
+				<td>Term</td>
+				<td>Description</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Chains</td>
+				<td>Used to allow or block traffic</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Input</td>
+				<td>Used for incoming connections that are not delivered locally</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Output</td>
+				<td>Used for outgoing connections</td>
+			</tr>
+			<tr>
+				<td>Ethernet Statistics</td>
+				<td>Status</td>
+				<td>Determines whether the system is online or offline</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_good</td>
+				<td>total bytes and packets received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_errors</td>
+				<td>the number of bad packets received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_dropped</td>
+				<td>the number of times when there is no space in Linux buffers</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_overruns</td>
+				<td>the number of times when there are fifo overruns caused by the rate at which the buffer gets full and the kernel is not able to empty it</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_frame</td>
+				<td>the number of times there is a received frame alignment error</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_good</td>
+				<td>total bytes and packets transmitted</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>rx_errors</td>
+				<td>the number of packet transmit problems</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>tx_dropped</td>
+				<td>the number of times there is no space available in Linux</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>tx_overruns</td>
+				<td>the number of times when there are fifo overruns caused by the rate at which the buffer gets full and the kernel is not able to empty it</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>tx_carrier</td>
+				<td>the number of errors due to the carrier</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>tx_collisions</td>
+				<td>the number of transmissions terminated due to Carrier Sense Multiple Access with Collision Detection</td>
+			</tr>
+			<tr>
+				<td>Switch Statistics</td>
+				<td>Status</td>
+				<td>determines whether the system is online or offline</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>duplex</td>
+				<td>link mode of the interface either full-duplex or half-duplex</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>speed</td>
+				<td>speed of the interface in megabits</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress bytes</td>
+				<td>the number of bytes received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress unicast</td>
+				<td>the number of unicast packets received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress broadcast</td>
+				<td>the number of broadcast packets received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress multicast</td>
+				<td>the number of multicast packets received</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress pause</td>
+				<td>the number of received packets that have the pause operational code; connected device requests for a traffic pause when its receive buffer is almost full</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress undersize</td>
+				<td>the number of received packets that are under 64 bytes</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress fragments</td>
+				<td>the number of received packets that are less than 64 octets in length</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress oversize</td>
+				<td>the number of received packets over 1514 bytes</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress jabber</td>
+				<td>the number of received packets exceed 20 ms</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress rx_error</td>
+				<td>the number of received packets that an rx error</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>ingress fcs_error</td>
+				<td>the number of received packets with frame check sequence errors but no framing errors</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress bytes</td>
+				<td>the number of bytes transmitted</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress unicast</td>
+				<td>the number of unicast packets transmitted</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress broadcast</td>
+				<td>the number of broadcast packets transmitted</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress multicast</td>
+				<td>the number of multicast packets transmitted</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress puase</td>
+				<td>the number of transmitted packets that have the pause operational code; connected device requests for a traffic pause when its receive buffer is almost full</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress excessive</td>
+				<td>the number of transmitted packets that have a collisions 16 times in a row</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress collisions</td>
+				<td>the number of Ethernet collisions</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>egress other</td>
+				<td>the number of transmitted packets with other types of errors</td>
+			</tr>
+		  </table>
+  </div>
+  <div class="tab-pane fade" id="Errors">
+   <p>Some errors are more critical than others, here is a list of the most critical errors.</p>
+	<table border="1" title="Critical Errors">
+		<tr>
+			<td>Ethernet Statistics</td>
+			<td>tx_frame</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>tx_collision</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>tx_collisions</td>
+		</tr>
+		<tr>
+			<td>Switch Statistics</td>
+			<td>ingress pause</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>ingress undersize</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>ingress oversize</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>ingress jabber</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>ingress fcs_error</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>egress pause</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>egress excessive</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>egress collisions</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>egress other</td>
+		</tr>
+	</table>
+  </div>
+  <div class="tab-pane fade" id="Info">
+    <table border="1" title = "Chart Information">
+	<tr>
+		<td>IP Tables</td>
+		<td>Type</td>
+		<td>Description</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>Input, Output, and Forward</td>
+		<td>Bytes graph displays the number of inputs/outputs/forwards bytes over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>Input, Output, and Forward</td>
+		<td>Packets graph displays the number of input/outputs/forwards packets over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>Input, Output, and Forward</td>
+		<td>Bandwidth graph displays the input/output/forward bandwidth of the intervals in kilobytes per second.</td>
+	</tr>
+	<tr>
+		<td>Ethernet Statistics</td>
+		<td></td>
+		<td>Errors graph displays the total number of errors over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td>Received packets graph displays the number of packets received over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td>Transmitted packets graph displays the number of packets transmitted over time.</td>
+	</tr>
+	<tr>
+		<td>Switch Statistics</td>
+		<td>Ingress/Egress</td>
+		<td>Bytes graph displays the number of bytes received/transmitted over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>Ingress/Egress</td>
+		<td>Multicast graph displays the number of multicast packets received/transmitted over time.</td>
+	<tr>
+	<tr>
+		<td></td>
+		<td>Ingress/Egress</td>
+		<td>Broadcast graph displays the number of broadcast packets received/transmitted over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>Ingress/Egress</td>
+		<td>Unicast graph displays the number of unicast packets received/transmitted over time.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td>Bandwidth graph displays the ingress/egress bandwidth of the interval in kilobytes per second.</td>
+		</tr>
+  </table>
+  </div>
+  <div class="tab-pane fade" id="How">
+	<p>Here is some information on how to use this site.</p>
+		<p>1. Upload multiple files.</p>
+		<ul>
+			<li>Click on the "Upload Log File" button found on the home screen or the "Upload" button found in the upper right hand corner of the page.</li>
+			<li>Then click on the "Choose Files" button.</li>
+			<li>Finally, hold down the "ctrl" key while selecting the files to be opened.</li>
+		</ul>
+		<p>2. Zoom in and out</p>
+		<ul>
+			<li>Click and hold the mouse on the starting position of the start of the interval to zoom in.</li>
+			<li>Drag the mouse over to the end of the interval.</li>
+			<li>Release mouse and view the graph zoomed in.</li>
+			<li>Click the "Reset zoom" button to zoom out of the graph back to the first interval range of when the file was first loaded.</li>
+		</ul>
+		<p>3. Select a specific series to view</p>
+		<ul>
+			<li>In the legend of the chart, click the series that should not be included in the chart.</li>
+		</ul>
+		<p>4. Change the interval</p>
+		<ul>
+			<li>In the text box next to the word "Interval", either type in a number or use the arrow keys to indicate the desired time interval.</li>
+			<li>Click the "Update" button.</li>
+		</ul>
+		<p>5. Print or download a graph</p>
+		<ul>
+			<li>In the upper right hand corner of each of the graphs, select the button with three lines.</li>
+			<li>Then choose an option to either print or download the graphs.</li>
+		</ul>
+  </div>
+</div>

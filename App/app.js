@@ -27,17 +27,21 @@ myApp.config(['$routeProvider',
                 templateUrl: 'partials/home.html',
                 controller: 'homeController'
             })
-            .when('/iptable/:uploadRedirect', {
+            .when('/iptable', {
                 templateUrl: 'partials/iptable.html',
                 controller: 'ipController'
             })
-            .when('/switch/:uploadRedirect', {
+            .when('/switch', {
                 templateUrl: 'partials/switch.html',
                 controller: 'switchController'
             }).
-            when('/ethernet/:uploadRedirect', {
+            when('/ethernet', {
                 templateUrl: 'partials/ethernet.html',
                 controller: 'ethernetController'
+            }).
+			when('/help', {
+                templateUrl: 'partials/help.html',
+				controller: 'helpController'
             }).
            otherwise({
                redirectTo: '/home'
@@ -46,6 +50,10 @@ myApp.config(['$routeProvider',
 
     }]);
 
+	myApp.controller('helpController', ['$scope', '$http', '$routeParams', '$location', '$rootScope', function ($scope, $http, $routeParams, $location, $rootScope){
+		
+	}]);
+	
 //change http to file upload control
 myApp.controller('homeController', ['$scope', '$http', '$routeParams', '$location', '$rootScope', function ($scope, $http, $routeParams, $location, $rootScope) {
 
@@ -90,15 +98,15 @@ myApp.controller('homeController', ['$scope', '$http', '$routeParams', '$locatio
             if (files[i] && files[i].Data) {
                 if (files[i].Data.LogType == "IPTable") {
                     $rootScope.currentData.IPStats.push(files[i]);
-                    path = '/iptable/true';
+                    path = '/iptable';
                 }
                 else if (files[i].Data.LogType == "Switch") {
                     $rootScope.currentData.SwitchStats.push(files[i]);
-                    path = '/switch/true';
+                    path = '/switch';
                 }
                 else if (files[i].Data.LogType == "Ethernet") {
                     $rootScope.currentData.EthernetStats.push(files[i]);
-                    path = '/ethernet/true';
+                    path = '/ethernet';
                 }
 
                 else {
@@ -155,7 +163,12 @@ myApp.controller('ipController', ['$scope', '$rootScope', '$routeParams', functi
                     pointFormat: '<span>{series.name}</span>: <b>{point.y}</b><br/>'
                 },
                 legend: {
-                    labelFormat: '{index}'
+					itemWidth: 1000,
+					width: 1000,
+                    labelFormatter: function () {
+						var label = this.index + ": " + this.name;
+						return '<span>' + label + '</span></br>';
+					}
                 }
             },
             title:
@@ -629,14 +642,22 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                 });
 
                 for (var k = 0; k < errorSeries.length; k++) {
-                    errorSeries[k].data.push({ name: registrationDetails[j].InterfaceName, y: 0 })
+					var drillId = registrationDetails[j].InterfaceName + '-' + k;
+                    errorSeries[k].data.push({ name: registrationDetails[j].InterfaceName, y: 0, drilldown: drillId});
+					errorDrilldown.push({
+                         type: 'line',
+                         id: drillId,
+                         data: []
+                         
+                     });
                 }
             }
 
             //move this logic into core library?
-            for (var j = 1; j < messageCount - 1; j++) {
+            for (var j = 1; j <= messageCount; j++) {
                 var dataItems = ethernetFile.Data.Messages[j].DataItems;
-
+				
+				var drillIndex = 0;
                 for (var k = 0; k < dataItems.length; k++) {
                     receivedPacketSeries[k].data.push(parseInt(dataItems[k].RxGood));
                     transmittedPacketSeries[k].data.push(parseInt(dataItems[k].TxGood));
@@ -659,8 +680,9 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                     }
 
                     statusSeries[k].data.push(parseInt(dataItems[k].Status));
-
-                    /* errorSeries[0].data[k].y = parseInt(dataItems[k].RxErrors); //probably a better way to handle this
+					
+					
+                    errorSeries[0].data[k].y = parseInt(dataItems[k].RxErrors); 
                     errorSeries[1].data[k].y = parseInt(dataItems[k].RxDropped);
                     errorSeries[2].data[k].y = parseInt(dataItems[k].RxOverruns);
                     errorSeries[3].data[k].y = parseInt(dataItems[k].RxFrame);
@@ -668,17 +690,19 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                     errorSeries[5].data[k].y = parseInt(dataItems[k].TxDropped);
                     errorSeries[6].data[k].y = parseInt(dataItems[k].TxOverruns);
                     errorSeries[7].data[k].y = parseInt(dataItems[k].TxCarrier);
-                    errorSeries[8].data[k].y = parseInt(dataItems[k].TxCollisions);  */
+                    errorSeries[8].data[k].y = parseInt(dataItems[k].TxCollisions); 
 
-                    errorSeries[0].data[k].y = 2; //test data
-                    errorSeries[1].data[k].y = 4;
-                    errorSeries[2].data[k].y = 6;
-                    errorSeries[3].data[k].y = 8;
-                    errorSeries[4].data[k].y = 10;
-                    errorSeries[5].data[k].y = 12;
-                    errorSeries[6].data[k].y = 14;
-                    errorSeries[7].data[k].y = 16;
-                    errorSeries[8].data[k].y = 18;
+					
+					errorDrilldown[drillIndex].data.push({x:j, y: parseInt(dataItems[k].RxErrors)});
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].RxDropped)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].RxOverruns)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].RxFrame)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].TxErrors)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].TxDropped)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].TxOverruns)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].TxCarrier)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].TxCollisions)})
+					++drillIndex;
                 }
 
 
@@ -700,7 +724,10 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                 options: {
                     chart: {
                         type: 'column'
-                    }
+                    },
+					drilldown: {
+						series: errorDrilldown
+					}
                 },
                 title: {
                     text: 'Errors'
@@ -728,10 +755,8 @@ myApp.controller('ethernetController', ['$scope', '$rootScope', '$routeParams', 
                         borderWidth: 0
                     }
                 },
-                series: errorSeries,
-                drilldown: {
-                    series: errorDrilldown
-                }
+                series: errorSeries
+                
             };
 
 
@@ -883,6 +908,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
 
             var statusSeries = [];
 
+			var errorDrilldown = [];
             var errorSeries = [
 			{
 			    name: 'Ingress Pause',
@@ -1011,14 +1037,21 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                 });
 
                 for (var k = 0; k < errorSeries.length; k++) {
-                    errorSeries[k].data.push({ name: registrationDetails[j].ID, y: 0 })
+					var drillId = registrationDetails[j].ID + '-' + k;
+                    errorSeries[k].data.push({ name: registrationDetails[j].ID, y: 0, drilldown: drillId });
+					errorDrilldown.push({
+                         type: 'line',
+                         id: drillId,
+                         data: []
+                     });
                 }
             }
 
             //move this logic into core library?
-            for (var j = 1; j < messageCount - 1; j++) {
+            for (var j = 1; j <= messageCount; j++) {
                 var dataItems = switchFile.Data.Messages[j].DataItems;
 
+				var drillIndex = 0;
                 for (var k = 0; k < dataItems.length - 1; k++) {
 
                     ingressByteSeries[k].data.push(parseInt(dataItems[k].IngressBytes));
@@ -1089,7 +1122,7 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                     statusSeries[k].data.push(parseInt(dataItems[k].Status));
 
 
-                    errorSeries[0].data[k].y = parseInt(dataItems[k].IngressPause); //probably a better way to handle this
+                    errorSeries[0].data[k].y = parseInt(dataItems[k].IngressPause); 
                     errorSeries[1].data[k].y = parseInt(dataItems[k].IngressUndersize);
                     errorSeries[2].data[k].y = parseInt(dataItems[k].IngressFragments);
                     errorSeries[3].data[k].y = parseInt(dataItems[k].IngressOversize);
@@ -1100,18 +1133,20 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                     errorSeries[8].data[k].y = parseInt(dataItems[k].EgressExcessive);
                     errorSeries[9].data[k].y = parseInt(dataItems[k].EgressCollisions);
                     errorSeries[10].data[k].y = parseInt(dataItems[k].EgressOther);
+					
+					errorDrilldown[drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressPause)});
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressUndersize)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressFragments)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressOversize)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressJabber)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressRxErr)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].IngressFcsErr)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].EgressPause)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].EgressExcessive)})
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].EgressCollisions)}); 
+					errorDrilldown[++drillIndex].data.push({x:j, y: parseInt(dataItems[k].EgressOther)})
+					++drillIndex;
 
-                    /* errorSeries[0].data[k].y = 0; //test data
-                    errorSeries[1].data[k].y = 2;
-                    errorSeries[2].data[k].y = 4;
-                    errorSeries[3].data[k].y = 6;
-                    errorSeries[4].data[k].y = 8;
-                    errorSeries[5].data[k].y = 10;
-                    errorSeries[6].data[k].y = 12;
-                    errorSeries[7].data[k].y = 14;
-                    errorSeries[8].data[k].y = 16;
-					errorSeries[9].data[k].y = 18;
-                    errorSeries[10].data[k].y = 20;  */
                 }
             }
 
@@ -1120,7 +1155,10 @@ myApp.controller('switchController', ['$scope', '$rootScope', '$routeParams', fu
                     chart: {
                         type: 'column',
                         zoomType: 'x'
-                    }
+                    },
+					drilldown: {
+						series: errorDrilldown
+					}
                 },
                 title: {
                     text: 'Errors'

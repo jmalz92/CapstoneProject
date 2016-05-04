@@ -1,0 +1,14 @@
+g++ -c -I./protobuf/include -L./protobuf/lib defs.h IpStat.hpp MessageReader.hpp IpStat.cpp MessageReader.cpp
+ar -cvq ParseLib.a defs.h.gch IpStat.hpp.gch MessageReader.hpp.gch IpStat.o MessageReader.o
+g++ -o ParseTestApp TestApp.cpp ParseLib.a
+
+
+
+This works
+g++ -o testapp -I./protobuf/include -L./protobuf/lib defs.h IpStat.hpp MessageReader.hpp IpStat.cpp MessageReader.cpp PBNetStat.pb.cc PBNetStat.pb.h TestApp.cpp -lprotobuf
+
+new addition
+g++ -std=c++11 -o testapp -I./protobuf/include -L./protobuf/lib defs.h IpStat.hpp MessageReader.hpp IpStat.cpp MessageReader.cpp PBNetStat.pb.cc PBNetStat.pb.h TestApp.cpp -lprotobuf
+
+new compiling
+g++ -std=c++11 -o testapp -I./protobuf/include -L./protobuf/lib defs.h Stats.hpp MessageReader.hpp Stats.cpp MessageReader.cpp PBNetStat.pb.cc PBNetStat.pb.h TestApp.cpp -lprotobuf
